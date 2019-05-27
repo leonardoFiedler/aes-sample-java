@@ -22,9 +22,14 @@ public class Main {
 			{"8c", "a1", "89", "0d", "bf", "e6", "42", "68", "41", "99", "2d", "0f", "b0", "54", "bb", "16"}
 			};
 	public static final String[] VETOR_ROUND_CONSTANT_HEXADECIMAl = {"01", "02", "04", "08", "10", "20", "40", "80", "1B", "36"};
+	private static Scanner scanner;
+	static int[] vetorRoundConstant;
+	static int[][] sBox;
+	static int key[];
+	static int[][] keySchedule;
 	
 	public static int[][] sBoxToDecimal() {
-		int[][] sBox = new int[16][16];
+		sBox = new int[16][16];
 		for (int i = 0; i < S_BOX_HEXADECIMAl.length; i++) {
 			for (int j = 0; j < S_BOX_HEXADECIMAl[i].length; j++) {
 					sBox[i][j] = Integer.parseInt(S_BOX_HEXADECIMAl[i][j], 16);		
@@ -42,25 +47,28 @@ public class Main {
 	}
 
 	public static void main(String[] args) {
-		int [][] sBox = sBoxToDecimal();
-		int[] vetorRoundConstant = vetorRoundConstantToDecimal();
-		//byte b2 = -128; // Or `= (byte)156;`
-//		int i2 = (b2 & 0xFF);
-//		System.out.println(i2); // 156
-		//Leitura da chave
-		Scanner scanner = new Scanner(System.in);
+		sBox = sBoxToDecimal();
+		vetorRoundConstant = vetorRoundConstantToDecimal();
+		scanner = new Scanner(System.in);
 		System.out.println("Informe a chave: ");
 		String chaveRaw = scanner.nextLine();
-		int key[] = new int[16];
+		key = new int[16];
 		String[] split = chaveRaw.split(",");
 		
 		for (int i = 0; i < split.length; i++) {
 			key[i] = Integer.valueOf(split[i]);
 		}
 		
-		//Todo: Efetuar carregamento do arquivo
-		String textoFile = "Desenvolvimento!";
+		//TODO: Efetuar carregamento do arquivo
+		String textoFile = "DESENVOLVIMENTO!";
 		
+		expandKey();
+		blockCipher(textoFile);
+		
+   		System.out.println("Hello");
+	}
+	
+	public static void expandKey() {
 		int[][] matrizEstadoChave = new int[4][4];
 		int count = 0;
 		
@@ -70,27 +78,24 @@ public class Main {
 			}
 		}
 		
-		int[][] keySchedule = new int[44][4];
-		
+		keySchedule = new int[44][4];
 		for (int i = 0; i < matrizEstadoChave.length; i++) {
 			for (int j = 0; j < matrizEstadoChave[i].length; j++) {
-				keySchedule[j][i] = matrizEstadoChave[j][i];
+				keySchedule[i][j] = matrizEstadoChave[j][i];
 			}
 		}
 		
-		for (int i = 4; i < keySchedule.length; i++) {
+   		for (int i = 4; i < keySchedule.length; i++) {
 			if (i % 4 == 0) {
 				//Primeiro caso
 				int[] copia = Arrays.copyOf(keySchedule[i-1], 4);
 				int[] rotWord = new int[4];
 				
-				for (int j = copia.length - 1; j >= 0; j--) {
-					if (j - 1 < 0) {
-						rotWord[0] = copia[copia.length - 1];
-					} else {
-						rotWord[j] = copia[j - 1];
-					}
-				}
+				rotWord[0] = copia[1];
+				rotWord[1] = copia[2];
+				rotWord[2] = copia[3];
+				rotWord[3] = copia[0];
+				
 				for (int indexRotWord = 0; indexRotWord < rotWord.length; indexRotWord++) {
 					String hexByte = Integer.toString(rotWord[indexRotWord], 16);					
 					int primeirosBits = 0;
@@ -108,43 +113,41 @@ public class Main {
 				roundConstant[1] = 0;
 				roundConstant[2] = 0;
 				roundConstant[3] = 0;
-				roundConstant[0] = vetorRoundConstant[i/4+1];
+				roundConstant[0] = vetorRoundConstant[i/4-1];
 				int[] palavraGerada = new int[4];
 				for (int indexPalavraGerada = 0; indexPalavraGerada < rotWord.length; indexPalavraGerada++) {
-					
 					palavraGerada[indexPalavraGerada] = rotWord[indexPalavraGerada] ^ roundConstant[indexPalavraGerada];
 				}
 				for (int indexPalavraGerada = 0; indexPalavraGerada < rotWord.length; indexPalavraGerada++) {				
 					palavraGerada[indexPalavraGerada] = keySchedule[i-4][indexPalavraGerada] ^ palavraGerada[indexPalavraGerada];
 				}
 				keySchedule[i] = palavraGerada; 
-				System.out.println("Hello");
 			} else {
 				//Segundo caso
 				for (int j = 0; j < keySchedule[i].length; j++) {
-					
+					int anterior = keySchedule[i-1][j];
+					int rkAnterior = keySchedule[i-4][j];
+					keySchedule[i][j] = anterior ^ rkAnterior;
 				}
 			}
-			
-			
 		}
+	}
+	
+	public static void blockCipher(String textoSimples) {
 		
 		
 	}
 	
-	/*
-	[[20, 199, 31, 59], 
-	[1, 0, 94, 30], 
-	[94, 48, 112, 100], 
-	[33, 9, 40, 248], 
-	[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
-	
-	
-	[[20, 199, 31, 59], 
-	 [1, 0, 94, 30], 
-	 [94, 48, 112, 100], 
-	 [33, 9, 40, 248]]
-	 
-	 */
-
+	//TODO:
+	public static void padding(String textoSimples) {
+		int diferenca = textoSimples.getBytes().length % 16;
+		
+		if (diferenca == 0) {
+			int[] word = new int[textoSimples.getBytes().length + 16];
+		} else {
+			int div = 16 % textoSimples.getBytes().length;
+			int[] word = new int[textoSimples.getBytes().length + div];
+		}
+		
+	}
 }
