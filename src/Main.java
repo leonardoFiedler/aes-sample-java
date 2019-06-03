@@ -208,13 +208,12 @@ public class Main {
 		}
 		int qtdBlocks = texto.length / 16;
 		int[][] matrizEstado = new int[4][4];
-		for (int index = 1; index <= qtdBlocks; index++) {
+		for (int index = 0; index < qtdBlocks; index++) {
 
 		    // Xor com RoundKey 0
-		    int qtdSoma = index * 4;
             for (int i = 0; i < 4; i++) {
                 for (int j = 0; j < 4; j++) {
-                    matrizEstado[i][j] = keySchedule[i][j] ^ matrizEstadoPrincipal[i * index][j];
+                    matrizEstado[i][j] = keySchedule[i][j] ^ matrizEstadoPrincipal[i + index * 4][j];
                 }
             }
 
@@ -253,6 +252,7 @@ public class Main {
 
                 if (iRound != 10) {
                     // MixColumns
+                		int[][] mixedColumns = new int[4][4];
 					int[] shiftRowsBits;
 					int[] multiplyMatrix;
 					int value01;
@@ -260,50 +260,75 @@ public class Main {
 					int resultado[] = new int[4];
                     for (int i = 0; i < 4; i++) {
                         for (int j = 0; j < 4; j++) {
-                        	for (int k = 0; k < 4; k++) {
-								shiftRowsBits = getMinMaxBits(shiftRows[i][k]);
-								multiplyMatrix = getMinMaxBits(MULTIPLY_MATRIX[j][k]);
-								value01 = tableL[shiftRowsBits[0]][shiftRowsBits[1]];
-								value02 = tableL[multiplyMatrix[0]][multiplyMatrix[1]];
-								resultado[k] = value01 + value02;
-								if (resultado[k] > 255) {
-									resultado[k] = resultado[k] - 255;
-								}
+                        		for (int k = 0; k < 4; k++) {
+                        			int val1 = shiftRows[i][k];
+                        			int val2 = MULTIPLY_MATRIX[j][k];
+                        			
+                        			if (val1 == 0 || val2 == 0) {
+    									resultado[k] = 0;
+    								} else if (val1 == 1) {
+    									resultado[k] = val2;
+    								} else if (val2 == 1) {
+    									resultado[k] = val1;
+    								} else {
+    									shiftRowsBits = getMinMaxBits(shiftRows[i][k]);
+    									multiplyMatrix = getMinMaxBits(MULTIPLY_MATRIX[j][k]);
+    									value01 = tableL[shiftRowsBits[0]][shiftRowsBits[1]];
+    									value02 = tableL[multiplyMatrix[0]][multiplyMatrix[1]];
+    									    									
+    									resultado[k] = value01 + value02;
+    									//Se passou do #FF
+    									if (resultado[k] > 255) {
+    										resultado[k] = resultado[k] - 255;
+    									}
+    									
+    									int[] result = getMinMaxBits(resultado[k]);
+    									resultado[k] = tableE[result[0]][result[1]];
+    								}
 							}
-							matrizEstado[i][j] = resultado[0];
+                        		
+                        		mixedColumns[i][j] = resultado[0];
 							for (int k = 1; k < resultado.length; k++) {
-								matrizEstado[i][j] = matrizEstado[i][j] ^ resultado[k];
+								mixedColumns[i][j] = mixedColumns[i][j] ^ resultado[k];
 							}
 						}
                     }
+                    
+                    matrizEstado = mixedColumns;
                 } else {
-                	matrizEstado = shiftRows;
-				}
+                		matrizEstado = shiftRows;
+                }
 
                 // Xor Round Key [iRound]
                 for (int i = 0; i < 4; i++) {
-                    for (int j = 0; i < 4; j++) {
-                        matrizEstado[i][j] = keySchedule[i * iRound][j] ^ matrizEstado[i][j];
-                    }
-                }
-                for (int i = 0; i < 4; i++) {
                     for (int j = 0; j < 4; j++) {
-                        matrizEstadoPrincipal[i * index][j] = matrizEstado[i][j];
+                        matrizEstado[i][j] = keySchedule[ i + iRound * 4][j] ^ matrizEstado[i][j];
                     }
                 }
             }
+            
+			for (int i = 0; i < 4; i++) {
+				for (int j = 0; j < 4; j++) {
+					matrizEstadoPrincipal[i + index * 4][j] = matrizEstado[i][j];
+				}
+			}
             System.out.println("Hello");
         }
         StringBuilder result = new StringBuilder();
 		for (int i = 0; i < matrizEstadoPrincipal.length; i++) {
 		    for (int j = 0; j < matrizEstadoPrincipal[i].length; j++) {
-		        result.append(Integer.toString(matrizEstadoPrincipal[i][j], 16));
+		    		String val = Integer.toString(matrizEstadoPrincipal[i][j], 16);
+		    		
+		    		if (val.length() == 1) {
+		    			result.append("0").append(val);
+		    		} else {
+		    			result.append(val);
+		    		}		    	
             }
         }
         return result.toString();
     }
 	
-	//TODO:
 	public static int[] padding(String textoSimples) {
 		int diferenca = BLOCK_SIZE - (textoSimples.getBytes().length % BLOCK_SIZE);
 		int[] result = new int[textoSimples.getBytes().length + diferenca];
