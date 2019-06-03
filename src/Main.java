@@ -1,7 +1,16 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.Scanner;
 
 public class Main {
+	
+	//As duas constantes abaixo servem para o usuario indicar o arquivo de entrada e onde deseja salvar o arquivo
+	public static final String INPUT_TEXT_FILE = "input.txt";
+	public static final String OUTPUT_ENCRYPTED_FILE = "output.txt";
 	
 	public static final String[][] S_BOX_HEXADECIMAl = {
 			{"63", "7c", "77", "7b", "f2", "6b", "6f", "c5", "30", "01", "67", "2b", "fe", "d7", "ab", "76"},
@@ -101,8 +110,22 @@ public class Main {
 		}
 		return vetorRoundConstant;
 	}
+	
+	public static String loadFileContents(String file) throws Exception {
+		BufferedReader reader = new BufferedReader(new FileReader(file));
+		String fileContents = "";
+		
+		String line = reader.readLine(); 
+		while (line != null) {
+			fileContents += line;
+			line = reader.readLine();
+		}
+		
+		reader.close();
+		return fileContents;
+	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		sBox = sBoxToDecimal();
 		vetorRoundConstant = vetorRoundConstantToDecimal();
 		scanner = new Scanner(System.in);
@@ -115,13 +138,22 @@ public class Main {
 			key[i] = Integer.valueOf(split[i]);
 		}
 		
-		//TODO: Efetuar carregamento do arquivo
-		String textoFile = "DESENVOLVIMENTO!";
+		String textoFile = loadFileContents(INPUT_TEXT_FILE);
 		
 		expandKey();
-		blockCipher(textoFile);
+		String txt = blockCipher(textoFile);
 		
-   		System.out.println("Hello");
+		BufferedWriter writer = null;
+        try {
+            File file = new File(OUTPUT_ENCRYPTED_FILE);
+            writer = new BufferedWriter(new FileWriter(file));
+            writer.write(txt);
+            writer.flush();
+            writer.close();
+            System.out.println("Encrypt Finalizado!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 	}
 	
 	public static void expandKey() {
@@ -312,7 +344,6 @@ public class Main {
 					matrizEstadoPrincipal[i + index * 4][j] = matrizEstado[i][j];
 				}
 			}
-            System.out.println("Hello");
         }
         StringBuilder result = new StringBuilder();
 		for (int i = 0; i < matrizEstadoPrincipal.length; i++) {
